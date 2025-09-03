@@ -1,0 +1,19 @@
+{
+  "title": "Quiz Name",
+  "defaultTimeLimitSeconds": 20,
+  "questions": [
+    {
+      "id": "q1", 
+      "text": "Quiz Question (e.g): When was the movie JAWS released in cinemas?",
+      "imageUrl": "Insert image URL here (optional), leave empty if none", 
+      "timeLimitSeconds": 20,
+      "options": [
+        { "id": "a", "label": "Answer 1"},
+        { "id": "b", "label": "Answer 2"},
+        { "id": "c", "label": "Answer 3"},
+        { "id": "d", "label": "Answer 4"}
+      ], 
+      "correctOptionIds": ["b","c"]
+    }
+  ]
+}

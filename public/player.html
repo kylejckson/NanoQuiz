@@ -1,0 +1,55 @@
+<!-- public/player.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Join | Quiz</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="player">
+  <div class="container">
+    <section id="join">
+      <h1>Join Game</h1>
+      <div class="join-row">
+        <input id="name" maxlength="20" placeholder="Your name" />
+        <button id="joinBtn" class="primary">Join</button>
+      </div>
+      <div id="joinMsg" class="muted"></div>
+    </section>
+
+    <section id="waiting" class="card hidden">
+      <h2>Waiting for host…</h2>
+      <p id="waitingGame"></p>
+    </section>
+
+    <section id="play" class="hidden">
+      <div class="quiz-header">
+        <div class="progress"><span id="qIndex">1</span>/<span id="qTotal">1</span></div>
+        <h2 id="qText"></h2>
+      </div>
+      <img id="qImage" class="ref-image hidden" alt="reference" />
+      <div class="answers-grid" id="answers"></div>
+      <div id="status" class="muted"></div>
+      <div id="timer" class="muted"></div>
+      <audio id="music" src="/audio/countdown.mp3" loop></audio>
+      <audio id="reveal" src="/audio/reveal.mp3"></audio>
+    </section>
+
+    <section id="leaderboard" class="card hidden">
+      <h2>Leaderboard</h2>
+      <ol id="board"></ol>
+    </section>
+
+    <section id="over" class="card hidden">
+      <h2>Podium</h2>
+      <ol id="finalBoard"></ol>
+      <button id="backToJoinBtn" class="primary" style="margin-top:16px;">Join a new game</button>
+      <audio id="end" src="/audio/end.mp3"></audio>
+    </section>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/player.js"></script>
+</body>
+</html>

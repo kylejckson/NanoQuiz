@@ -1,0 +1,68 @@
+<!-- public/host.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Host | Quiz</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="host">
+  <div class="container">
+    <h1 id="title">Host a Game</h1>
+
+    <section id="create">
+      <label class="file-label">
+        <input type="file" id="jsonFile" accept="application/json" />
+        <span>Choose JSON Question Set</span>
+      </label>
+      <button id="createBtn" class="primary" disabled>Create Game</button>
+      <div id="createMsg" class="muted"></div>
+    </section>
+
+    <section id="lobby" class="card hidden">
+      <h2>Lobby</h2>
+      <p><strong>Game link:</strong> <span id="joinLink"></span></p>
+      <p><strong>Game ID:</strong> <span id="gameId"></span></p>
+      <div>
+        <button id="startBtn" class="primary" disabled>Start Game</button>
+      </div>
+      <h3>Players</h3>
+      <ul id="players"></ul>
+    </section>
+
+    <section id="play" class="hidden">
+      <div class="quiz-header">
+        <div class="progress"><span id="qIndex">1</span>/<span id="qTotal">1</span></div>
+        <h2 id="qText"></h2>
+      </div>
+      <img id="qImage" class="ref-image hidden" alt="reference" />
+      <div class="answers-grid" id="answers"></div>
+      <div class="controls">
+        <button id="nextBtn" class="primary hidden">Next</button>
+      </div>
+      <audio id="music" src="/audio/countdown.mp3" loop></audio>
+      <audio id="reveal" src="/audio/reveal.mp3"></audio>
+    </section>
+
+    <section id="leaderboard" class="card hidden">
+      <h2>Leaderboard</h2>
+      <ol id="board"></ol>
+    </section>
+
+    <section id="over" class="card hidden">
+      <h2>Podium</h2>
+      <ol id="finalBoard"></ol>
+      <button id="backToCreateBtn" class="primary" style="margin-top:16px;">Create a new game</button>
+      <audio id="end" src="/audio/end.mp3"></audio>
+    </section>
+
+    <section id="cancelled" class="card hidden">
+      <h2>Game cancelled</h2>
+      <p id="cancelReason"></p>
+    </section>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/host.js"></script>
+</body>
+</html>
