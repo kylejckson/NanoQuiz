@@ -14,7 +14,6 @@ const el = {
   lobby: byId('lobby'),
   players: byId('players'),
   startBtn: byId('startBtn'),
-  joinLink: byId('joinLink'),
   gameIdText: byId('gameId'),
   play: byId('play'),
   qText: byId('qText'),
@@ -58,7 +57,6 @@ el.createBtn.addEventListener('click', async () => {
   }
     gameId = res.gameId;
     el.title.textContent = payload.title || 'Quiz';
-    el.joinLink.textContent = `${location.origin}/player.html?game=${gameId}`;
     el.gameIdText.textContent = gameId;
 
     el.lobby.classList.remove('hidden');
