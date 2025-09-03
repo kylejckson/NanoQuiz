@@ -9,6 +9,15 @@ NanoQuiz is a lightweight, open-source quiz game platform inspired by popular on
 - Leaderboards, timers, and answer reveal animations
 - Designed for classrooms, remote teams, or social gatherings
 
+## Screenshots
+![Main Quiz](/screenshots/screen3.png?raw=true)
+
+![Main Quiz](/screenshots/screen4.png?raw=true)
+
+![Main Quiz](/screenshots/screen1.png?raw=true)
+
+![Main Quiz](/screenshots/screen2.png?raw=true)
+
 ## Installation
 
 1. **Clone or Download the Repository**
