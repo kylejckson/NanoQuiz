@@ -191,24 +191,10 @@ socket.on('question:reveal', ({ correctOptionIds, leaderboard, counts }) => {
   // Map optionId to count for correct badge placement
   let optionIdToCount = {};
   if (Array.isArray(counts) && el.answers.children.length === counts.length) {
-    // Get the optionId for each button in the original order
-    // But since options are shuffled, we need to get the mapping from the question
-    // Instead, send the mapping from the server, but since we don't have it, we use the DOM order
-    // So, fallback: use the DOM order, but this is only correct if the server and client use the same order
-    // To fix: store the mapping of optionId to count in the order of the current question's options
-    // But since we don't have the original options order here, we need to get it from the DOM
-    // So, instead, on reveal, send also the optionIds array in order from the server
-    // But for now, let's map by optionId
     [...el.answers.children].forEach((btn, idx) => {
       optionIdToCount[btn.dataset.id] = 0;
     });
-    // The server sends counts in the order of the original options array
-    // But the client has shuffled the options, so we need to know the original optionIds order
-    // To fix this, we need the server to send optionIds in order with counts
-    // For now, as a workaround, we can skip showing counts if the mapping is ambiguous
-    // But let's try to fix it by storing the mapping when showing the question
 
-    // Use a global variable to store the mapping from optionId to count
     if (window._lastOptionIdOrder && Array.isArray(counts)) {
       window._lastOptionIdOrder.forEach((optionId, idx) => {
         optionIdToCount[optionId] = counts[idx] || 0;
