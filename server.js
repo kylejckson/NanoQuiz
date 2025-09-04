@@ -7,7 +7,7 @@ const { customAlphabet } = require('nanoid');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-const nanoid = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ', 4);
+const nanoid = customAlphabet('0123456789', 4);
 
 // Configuration
 const MAX_GAMES = 100;
@@ -51,10 +51,15 @@ function createGameState(hostSocketId, payload) {
   };
 }
 
-// Get public leaderboard (name and score only, sorted)
+// Get public leaderboard (name, score, lastCorrect, delta) sorted
 function getPublicLeaderboard(state) {
   const entries = Array.from(state.players.values())
-    .map(p => ({ name: p.name, score: p.score, lastCorrect: !!p.lastCorrect }))
+    .map(p => ({
+      name: p.name,
+      score: p.score,
+      lastCorrect: !!p.lastCorrect,
+      delta: p.delta || 0
+    }))
     .sort((a, b) => b.score - a.score);
   return entries;
 }
@@ -81,6 +86,7 @@ function startQuestion(state) {
     p.answeredAtMs = null;
     p.selectedOptionId = null;
     p.lastCorrect = false;
+    p.delta = 0; // <-- Track score delta for this round
   }
 
   state.round = {
@@ -124,13 +130,28 @@ function endRound(state) {
     const answered = p.selectedOptionId != null;
     const correct = answered && q.correctOptionIds.includes(p.selectedOptionId);
     p.lastCorrect = correct;
+    let delta = 0;
     if (correct && p.answeredAtMs) {
       const timeLimit = q.timeLimitSeconds * 1000;
       const timeRemaining = Math.max(0, endMs - p.answeredAtMs);
-      const points = Math.floor(500 + 500 * (timeRemaining / timeLimit));
-      p.score += points;
+      delta = Math.floor(500 + 500 * (timeRemaining / timeLimit));
+      p.score += delta;
+    }
+    p.delta = delta; // <-- Store delta for this round
+  }
+
+  // Count how many players picked each option
+  const optionCounts = {};
+  for (const opt of q.options) {
+    optionCounts[opt.id] = 0;
+  }
+  for (const p of state.players.values()) {
+    if (p.selectedOptionId && optionCounts.hasOwnProperty(p.selectedOptionId)) {
+      optionCounts[p.selectedOptionId]++;
     }
   }
+  // Prepare counts array in the same order as q.options
+  const counts = q.options.map(opt => optionCounts[opt.id] || 0);
 
   const leaderboard = getPublicLeaderboard(state);
 
@@ -139,7 +160,8 @@ function endRound(state) {
     correctOptionIds: q.correctOptionIds,
     index: state.currentIndex,
     total: state.questions.length,
-    leaderboard
+    leaderboard,
+    counts // <-- send counts array
   });
 
   state.round = null;

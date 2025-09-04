@@ -139,13 +139,14 @@ socket.on('question:show', (q) => {
   }
 
   el.answers.innerHTML = '';
-  // Assign global color/shape and randomize order
+  // Assign global color/shape (do NOT randomize order)
   let options = q.options.map((opt, idx) => ({
     ...opt,
     color: GLOBAL_ANSWER_STYLES[idx % GLOBAL_ANSWER_STYLES.length].color,
     shape: GLOBAL_ANSWER_STYLES[idx % GLOBAL_ANSWER_STYLES.length].shape
   }));
-  options = shuffleArray(options);
+  // Do NOT shuffle options
+  window._lastOptionIdOrder = options.map(opt => opt.id);
 
   options.forEach(opt => {
     const btn = document.createElement('button');
@@ -172,7 +173,7 @@ socket.on('question:show', (q) => {
 });
 
 // Question reveal
-socket.on('question:reveal', ({ correctOptionIds, leaderboard }) => {
+socket.on('question:reveal', ({ correctOptionIds, leaderboard, counts }) => {
   // Stop music, play reveal
   try { el.music.pause(); } catch {}
   try { el.reveal.currentTime = 0; el.reveal.play(); } catch {}
@@ -187,18 +188,44 @@ socket.on('question:reveal', ({ correctOptionIds, leaderboard }) => {
 
   el.status.textContent = '';
 
-  [...el.answers.children].forEach(btn => {
+  // Map optionId to count for correct badge placement
+  let optionIdToCount = {};
+  if (Array.isArray(counts) && el.answers.children.length === counts.length) {
+    // Get the optionId for each button in the original order
+    // But since options are shuffled, we need to get the mapping from the question
+    // Instead, send the mapping from the server, but since we don't have it, we use the DOM order
+    // So, fallback: use the DOM order, but this is only correct if the server and client use the same order
+    // To fix: store the mapping of optionId to count in the order of the current question's options
+    // But since we don't have the original options order here, we need to get it from the DOM
+    // So, instead, on reveal, send also the optionIds array in order from the server
+    // But for now, let's map by optionId
+    [...el.answers.children].forEach((btn, idx) => {
+      optionIdToCount[btn.dataset.id] = 0;
+    });
+    // The server sends counts in the order of the original options array
+    // But the client has shuffled the options, so we need to know the original optionIds order
+    // To fix this, we need the server to send optionIds in order with counts
+    // For now, as a workaround, we can skip showing counts if the mapping is ambiguous
+    // But let's try to fix it by storing the mapping when showing the question
+
+    // Use a global variable to store the mapping from optionId to count
+    if (window._lastOptionIdOrder && Array.isArray(counts)) {
+      window._lastOptionIdOrder.forEach((optionId, idx) => {
+        optionIdToCount[optionId] = counts[idx] || 0;
+      });
+    }
+  }
+
+  [...el.answers.children].forEach((btn, idx) => {
     const optId = String(btn.dataset.id);
     btn.classList.remove('correct', 'wrong', 'player-correct', 'player-wrong', 'player-reveal-correct');
     if (gotCorrect) {
-      // Highlight all correct answers green
       if (correctIds.includes(optId)) {
         btn.classList.add('player-correct');
       } else {
         btn.classList.add('wrong');
       }
     } else {
-      // Player got it wrong: their answer black, correct answer(s) red, others black if wrong
       if (lockedId && optId === lockedId && !correctIds.includes(optId)) {
         btn.classList.add('wrong');
       }
@@ -208,13 +235,29 @@ socket.on('question:reveal', ({ correctOptionIds, leaderboard }) => {
         btn.classList.add('wrong');
       }
     }
+    // Add count badge (use correct mapping)
+    if (optionIdToCount && optId in optionIdToCount) {
+      let count = optionIdToCount[optId] || 0;
+      let badge = btn.querySelector('.answer-count-badge');
+      if (badge) badge.remove();
+      const badgeEl = document.createElement('span');
+      badgeEl.className = 'answer-count-badge';
+      badgeEl.textContent = count;
+      badgeEl.style.cssText = 'margin-left:8px;background:#222;color:#fff;border-radius:10px;padding:2px 8px;font-size:0.95em;';
+      btn.appendChild(badgeEl);
+    }
   });
 
   // Leaderboard
   el.board.innerHTML = '';
   leaderboard.forEach((p, i) => {
     const li = document.createElement('li');
-    li.textContent = `${p.name} - ${p.score.toLocaleString()}`;
+    // Show score and delta if delta > 0
+    let scoreText = `${p.name} - ${p.score.toLocaleString()}`;
+    if (typeof p.delta === 'number' && p.delta > 0) {
+      scoreText += ` (+${p.delta})`;
+    }
+    li.textContent = scoreText;
     if (p.lastCorrect) li.classList.add('correctish');
     el.board.appendChild(li);
   });
@@ -236,7 +279,12 @@ socket.on('game:over', ({ leaderboard }) => {
   el.finalBoard.innerHTML = '';
   leaderboard.forEach((p, i) => {
     const li = document.createElement('li');
-    li.textContent = `${p.name} — ${p.score.toLocaleString()}`;
+    // Show score and delta if delta > 0
+    let scoreText = `#${i + 1} ${p.name} — ${p.score.toLocaleString()}`;
+    if (typeof p.delta === 'number' && p.delta > 0) {
+      scoreText += ` (+${p.delta})`;
+    }
+    li.textContent = scoreText;
     el.finalBoard.appendChild(li);
   });
 
@@ -268,3 +316,4 @@ socket.on('game:over', ({ leaderboard }) => {
     el.finalBoard.appendChild(li);
   });
 });
+

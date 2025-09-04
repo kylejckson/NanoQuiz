@@ -110,13 +110,14 @@ socket.on('question:show', (q) => {
   }
 
   el.answers.innerHTML = '';
-  // Assign global color/shape and randomize order
+  // Assign global color/shape (do NOT randomize order)
   let options = q.options.map((opt, idx) => ({
     ...opt,
     color: GLOBAL_ANSWER_STYLES[idx % GLOBAL_ANSWER_STYLES.length].color,
     shape: GLOBAL_ANSWER_STYLES[idx % GLOBAL_ANSWER_STYLES.length].shape
   }));
-  options = shuffleArray(options);
+  // Do NOT shuffle options
+  window._lastOptionIdOrder = options.map(opt => opt.id);
 
   options.forEach((opt) => {
     const btn = document.createElement('button');
@@ -134,18 +135,38 @@ socket.on('question:show', (q) => {
 });
 
 // Store current question id for answer tracking
-socket.on('question:reveal', ({ correctOptionIds, leaderboard }) => {
+socket.on('question:reveal', ({ correctOptionIds, leaderboard, counts }) => {
   // Stop music, play reveal
   try { el.music.pause(); } catch {}
   try { el.reveal.currentTime = 0; el.reveal.play(); } catch {}
 
+  // Build optionIdToCount mapping for correct badge placement
+  let optionIdToCount = {};
+  if (window._lastOptionIdOrder && Array.isArray(counts)) {
+    window._lastOptionIdOrder.forEach((optionId, idx) => {
+      optionIdToCount[optionId] = counts[idx] || 0;
+    });
+  }
+
   // Highlight correct and wrong answers using data-id
-  [...el.answers.children].forEach((btn) => {
+  [...el.answers.children].forEach((btn, idx) => {
     const optId = btn.dataset.id;
+    btn.classList.remove('correct', 'wrong');
     if (correctOptionIds.includes(optId)) {
       btn.classList.add('correct');
     } else {
       btn.classList.add('wrong');
+    }
+    // Add count badge (use correct mapping)
+    if (optionIdToCount && optId in optionIdToCount) {
+      let count = optionIdToCount[optId] || 0;
+      let badge = btn.querySelector('.answer-count-badge');
+      if (badge) badge.remove();
+      const badgeEl = document.createElement('span');
+      badgeEl.className = 'answer-count-badge';
+      badgeEl.textContent = count;
+      badgeEl.style.cssText = 'margin-left:8px;background:#222;color:#fff;border-radius:10px;padding:2px 8px;font-size:0.95em;';
+      btn.appendChild(badgeEl);
     }
   });
 
@@ -153,7 +174,12 @@ socket.on('question:reveal', ({ correctOptionIds, leaderboard }) => {
   el.board.innerHTML = '';
   leaderboard.forEach((p, i) => {
     const li = document.createElement('li');
-    li.textContent = `${p.name} - ${p.score.toLocaleString()}`;
+    // Show score and delta if delta > 0
+    let scoreText = `${p.name} - ${p.score.toLocaleString()}`;
+    if (typeof p.delta === 'number' && p.delta > 0) {
+      scoreText += ` (+${p.delta})`;
+    }
+    li.textContent = scoreText;
     if (p.lastCorrect) li.classList.add('correctish');
     el.board.appendChild(li);
   });
@@ -181,7 +207,12 @@ socket.on('game:over', ({ leaderboard }) => {
   el.finalBoard.innerHTML = '';
   leaderboard.forEach((p, i) => {
     const li = document.createElement('li');
-    li.textContent = `#${i + 1} ${p.name} — ${p.score.toLocaleString()}`;
+    // Show score and delta if delta > 0
+    let scoreText = `#${i + 1} ${p.name} — ${p.score.toLocaleString()}`;
+    if (typeof p.delta === 'number' && p.delta > 0) {
+      scoreText += ` (+${p.delta})`;
+    }
+    li.textContent = scoreText;
     el.finalBoard.appendChild(li);
   });
   // Play end sound effect
